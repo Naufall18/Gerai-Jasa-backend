@@ -1,0 +1,124 @@
+<?php
+
+namespace App\Http\Controllers\Api\V1;
+
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Auth\RequestOtpRequest;
+use App\Http\Requests\Auth\VerifyOtpRequest;
+use App\Http\Requests\Auth\RegisterRequest;
+use App\Http\Requests\Auth\LoginRequest;
+use App\Services\AuthService;
+use App\Traits\ApiResponseTrait;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+
+class AuthController extends Controller
+{
+    use ApiResponseTrait;
+
+    public function __construct(private AuthService $authService)
+    {
+    }
+
+    /**
+     * Request OTP for phone number.
+     *
+     * POST /api/v1/auth/request-otp
+     *
+     * @param RequestOtpRequest $request
+     * @return JsonResponse
+     */
+    public function requestOtp(RequestOtpRequest $request): JsonResponse
+    {
+        $result = $this->authService->requestOtp($request->phone);
+
+        if (!$result['success']) {
+            return $this->errorResponse($result['message'], 429, ['retry_after' => $result['retry_after'] ?? null]);
+        }
+
+        return $this->successResponse(['phone' => $result['phone']], $result['message']);
+    }
+
+    /**
+     * Verify OTP and login.
+     *
+     * POST /api/v1/auth/verify-otp
+     *
+     * @param VerifyOtpRequest $request
+     * @return JsonResponse
+     */
+    public function verifyOtp(VerifyOtpRequest $request): JsonResponse
+    {
+        $result = $this->authService->verifyOtp($request->phone, $request->code);
+
+        if (!$result['success']) {
+            return $this->errorResponse($result['message'], 401);
+        }
+
+        return $this->successResponse($result['data'], $result['message']);
+    }
+
+    /**
+     * Register new user (vendor/admin).
+     *
+     * POST /api/v1/auth/register
+     *
+     * @param RegisterRequest $request
+     * @return JsonResponse
+     */
+    public function register(RegisterRequest $request): JsonResponse
+    {
+        $result = $this->authService->register($request->validated());
+
+        return $this->successResponse($result['data'], $result['message'], 201);
+    }
+
+    /**
+     * Login with email and password.
+     *
+     * POST /api/v1/auth/login
+     *
+     * @param LoginRequest $request
+     * @return JsonResponse
+     */
+    public function login(LoginRequest $request): JsonResponse
+    {
+        $result = $this->authService->login($request->email, $request->password);
+
+        if (!$result['success']) {
+            return $this->errorResponse($result['message'], 401);
+        }
+
+        return $this->successResponse($result['data'], $result['message']);
+    }
+
+    /**
+     * Get authenticated user.
+     *
+     * GET /api/v1/auth/me
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function me(Request $request): JsonResponse
+    {
+        $result = $this->authService->me($request->user());
+
+        return $this->successResponse($result['data']);
+    }
+
+    /**
+     * Logout user.
+     *
+     * POST /api/v1/auth/logout
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function logout(Request $request): JsonResponse
+    {
+        $result = $this->authService->logout($request->user());
+
+        return $this->successResponse(null, $result['message']);
+    }
+}
