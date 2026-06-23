@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\V1\AdminUserController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\BookingController;
 use App\Http\Controllers\Api\V1\CategoryController;
@@ -70,6 +71,11 @@ Route::prefix('v1')->group(function () {
             Route::post('/services',        [VendorServiceController::class, 'store']);
             Route::patch('/services/{id}',  [VendorServiceController::class, 'update']);
             Route::delete('/services/{id}', [VendorServiceController::class, 'destroy']);
+        });
+
+        // Admin management routes (role: admin — enforced in controller)
+        Route::prefix('admin')->group(function () {
+            Route::get('/users', [AdminUserController::class, 'index']);
         });
     });
 
