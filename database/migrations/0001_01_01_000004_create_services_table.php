@@ -17,9 +17,9 @@ return new class extends Migration
             $table->integer('duration_minutes');
             $table->integer('max_advance_days')->default(30);
             $table->boolean('is_active')->default(true);
-            $table->jsonb('meta')->nullable();
-            $table->timestampsTz();
-            $table->softDeletesTz();
+            $table->json('meta')->nullable();
+            $table->timestamps();
+            $table->softDeletes();
 
             $table->foreign('vendor_id')->references('id')->on('vendors')->onDelete('cascade');
         });

@@ -151,19 +151,23 @@ class BookingService
      */
     public function confirmBooking(string $bookingId, string $vendorId): Booking
     {
-        $booking = Booking::where('id', $bookingId)
-            ->where('vendor_id', $vendorId)
-            ->where('status', 'pending')
-            ->firstOrFail();
+        return DB::transaction(function () use ($bookingId, $vendorId) {
+            $booking = Booking::where('id', $bookingId)
+                ->where('vendor_id', $vendorId)
+                ->where('status', 'pending')
+                ->lockForUpdate()
+                ->firstOrFail();
 
-        $booking->update([
-            'status' => 'confirmed',
-            'confirmed_at' => now(),
-        ]);
+            $booking->update([
+                'status' => 'confirmed',
+                'confirmed_at' => now(),
+            ]);
 
-        // TODO: dispatch SendBookingConfirmationJob to customer
+            // Dispatch SendBookingConfirmationJob to notify customer
+            \App\Jobs\SendBookingConfirmationJob::dispatch($booking);
 
-        return $booking->fresh(['vendor', 'service', 'customer', 'timeSlot']);
+            return $booking->fresh(['vendor', 'service', 'customer', 'timeSlot']);
+        });
     }
 
     /**
@@ -178,12 +182,13 @@ class BookingService
      */
     public function cancelBooking(string $bookingId, string $userId, string $reason): Booking
     {
-        $booking = Booking::where('id', $bookingId)
-            ->where(fn ($q) => $q->where('customer_id', $userId)->orWhereHas('vendor', fn ($q) => $q->where('user_id', $userId)))
-            ->whereIn('status', ['pending', 'confirmed'])
-            ->firstOrFail();
+        return DB::transaction(function () use ($bookingId, $userId, $reason) {
+            $booking = Booking::where('id', $bookingId)
+                ->where(fn ($q) => $q->where('customer_id', $userId)->orWhereHas('vendor', fn ($q) => $q->where('user_id', $userId)))
+                ->whereIn('status', ['pending', 'confirmed'])
+                ->lockForUpdate()
+                ->firstOrFail();
 
-        return DB::transaction(function () use ($booking, $reason) {
             $booking->update([
                 'status' => 'cancelled',
                 'cancelled_at' => now(),
@@ -193,15 +198,31 @@ class BookingService
             // Release the slot
             $slot = $booking->timeSlot;
             if ($slot) {
-                $slot->decrement('booked_count');
-                $slot->update(['is_available' => true]);
+                $lockedSlot = TimeSlot::lockForUpdate()->findOrFail($slot->id);
+                $lockedSlot->decrement('booked_count');
+                $lockedSlot->update(['is_available' => true]);
 
-                Cache::forget("slots:{$booking->vendor_id}:{$booking->service_id}:{$slot->slot_date}");
+                Cache::forget("slots:{$booking->vendor_id}:{$booking->service_id}:{$lockedSlot->slot_date}");
             }
 
-            // TODO: trigger refund if already paid, dispatch notification jobs
+            // Trigger refund if already paid
+            $payment = $booking->payment;
+            if ($payment && $payment->status === 'paid') {
+                $payment->update([
+                    'status' => 'refunded',
+                ]);
+            }
 
-            return $booking->fresh(['vendor', 'service', 'customer', 'timeSlot']);
+            // Dispatch cancellation notification
+            \App\Jobs\SendBookingCancellationJob::dispatchIf(
+                class_exists(\App\Jobs\SendBookingCancellationJob::class),
+                $booking
+            );
+
+            // Use inline notification instead
+            app(\App\Services\NotificationService::class)->sendBookingCancellation($booking);
+
+            return $booking->fresh(['vendor', 'service', 'customer', 'timeSlot', 'payment']);
         });
     }
 
@@ -216,19 +237,29 @@ class BookingService
      */
     public function completeBooking(string $bookingId, string $vendorId): Booking
     {
-        $booking = Booking::where('id', $bookingId)
-            ->where('vendor_id', $vendorId)
-            ->where('status', 'confirmed')
-            ->firstOrFail();
+        return DB::transaction(function () use ($bookingId, $vendorId) {
+            $booking = Booking::where('id', $bookingId)
+                ->where('vendor_id', $vendorId)
+                ->where('status', 'confirmed')
+                ->lockForUpdate()
+                ->firstOrFail();
 
-        $booking->update([
-            'status' => 'completed',
-            'completed_at' => now(),
-        ]);
+            $booking->update([
+                'status' => 'completed',
+                'completed_at' => now(),
+            ]);
 
-        // TODO: dispatch payment.success notification
+            // If COD, mark payment as paid upon service completion
+            $payment = $booking->payment;
+            if ($payment && $booking->payment_method === 'cod' && $payment->status !== 'paid') {
+                $payment->update([
+                    'status' => 'paid',
+                    'paid_at' => now(),
+                ]);
+            }
 
-        return $booking->fresh(['vendor', 'service', 'customer', 'timeSlot', 'payment']);
+            return $booking->fresh(['vendor', 'service', 'customer', 'timeSlot', 'payment']);
+        });
     }
 
     /**

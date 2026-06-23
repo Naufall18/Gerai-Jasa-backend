@@ -21,12 +21,12 @@ return new class extends Migration
             $table->decimal('total_price', 12, 2);
             $table->decimal('commission_amount', 12, 2)->default(0.00);
             $table->enum('payment_method', ['cod', 'midtrans', 'xendit']);
-            $table->timestampTz('confirmed_at')->nullable();
-            $table->timestampTz('completed_at')->nullable();
-            $table->timestampTz('cancelled_at')->nullable();
+            $table->timestamp('confirmed_at')->nullable();
+            $table->timestamp('completed_at')->nullable();
+            $table->timestamp('cancelled_at')->nullable();
             $table->text('cancellation_reason')->nullable();
-            $table->timestampsTz();
-            $table->softDeletesTz();
+            $table->timestamps();
+            $table->softDeletes();
 
             $table->foreign('customer_id')->references('id')->on('users')->onDelete('cascade');
             $table->foreign('vendor_id')->references('id')->on('vendors')->onDelete('cascade');

@@ -13,9 +13,9 @@ return new class extends Migration
             $table->string('notifiable_type');
             $table->uuid('notifiable_id');
             $table->string('type');
-            $table->jsonb('data')->nullable();
-            $table->timestampTz('read_at')->nullable();
-            $table->timestampsTz();
+            $table->json('data')->nullable();
+            $table->timestamp('read_at')->nullable();
+            $table->timestamps();
 
             $table->index(['notifiable_type', 'notifiable_id']);
         });

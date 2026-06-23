@@ -15,7 +15,7 @@ return new class extends Migration
             $table->time('open_time')->nullable();
             $table->time('close_time')->nullable();
             $table->boolean('is_closed')->default(false);
-            $table->timestampsTz();
+            $table->timestamps();
 
             $table->foreign('vendor_id')->references('id')->on('vendors')->onDelete('cascade');
         });

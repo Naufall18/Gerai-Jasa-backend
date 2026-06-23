@@ -121,4 +121,23 @@ class AuthController extends Controller
 
         return $this->successResponse(null, $result['message']);
     }
+
+    /**
+     * Update FCM token for push notifications.
+     *
+     * POST /api/v1/auth/fcm-token
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function updateFcmToken(Request $request): JsonResponse
+    {
+        $request->validate([
+            'fcm_token' => 'required|string|max:512',
+        ]);
+
+        $request->user()->update(['fcm_token' => $request->fcm_token]);
+
+        return $this->successResponse(null, 'FCM token updated successfully.');
+    }
 }

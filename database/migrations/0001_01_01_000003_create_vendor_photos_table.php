@@ -14,7 +14,7 @@ return new class extends Migration
             $table->string('url');
             $table->string('caption')->nullable();
             $table->integer('sort_order')->default(0);
-            $table->timestampsTz();
+            $table->timestamps();
 
             $table->foreign('vendor_id')->references('id')->on('vendors')->onDelete('cascade');
         });
