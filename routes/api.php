@@ -48,6 +48,7 @@ Route::prefix('v1')->group(function () {
             Route::get('/', [BookingController::class, 'index']);
             Route::post('/', [BookingController::class, 'store']);
             Route::get('/{id}', [BookingController::class, 'show']);
+            Route::post('/{id}/pay', [BookingController::class, 'pay']);
             Route::patch('/{id}/cancel', [BookingController::class, 'cancel']);
             Route::post('/{id}/review', [ReviewController::class, 'store']);
         });
