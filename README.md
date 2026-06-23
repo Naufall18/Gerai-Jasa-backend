@@ -1,6 +1,6 @@
-# Bookly Backend API
+# Gerai Jasa Backend API
 
-Laravel 11 REST API for **Bookly** — a multi-vendor booking platform (salons, clinics, workshops, etc.) for the Indonesian market.
+Laravel 11 REST API for **Gerai Jasa** — a multi-vendor booking platform (salons, clinics, workshops, etc.) for the Indonesian market.
 
 ## Tech Stack
 
@@ -103,8 +103,8 @@ All IDs are UUIDs. All tables have soft deletes and UTC ISO 8601 timestamps.
 
 ```bash
 # Clone
-git clone https://github.com/Naufall18/bookly-backend.git
-cd bookly-backend
+git clone https://github.com/Naufall18/geraijasa-backend.git
+cd geraijasa-backend
 
 # Install dependencies
 composer install
@@ -147,8 +147,8 @@ COD: pending → confirmed → awaiting_payment → completed
 
 ## Related Repositories
 
-- **Web Dashboard**: [bookly-web](https://github.com/Naufall18/bookly-web) — React 18 + TypeScript (Admin & Vendor Dashboard)
-- **Mobile App**: [bookly-mobile](https://github.com/Naufall18/bookly-mobile) — Flutter 3.x (Customer App)
+- **Web Dashboard**: [geraijasa-web](https://github.com/Naufall18/geraijasa-web) — React 18 + TypeScript (Admin & Vendor Dashboard)
+- **Mobile App**: [geraijasa-mobile](https://github.com/Naufall18/geraijasa-mobile) — Flutter 3.x (Customer App)
 
 ## License
 

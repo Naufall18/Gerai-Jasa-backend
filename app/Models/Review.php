@@ -14,6 +14,7 @@ class Review extends Model
         'booking_id',
         'customer_id',
         'vendor_id',
+        'service_id',
         'rating',
         'comment',
         'vendor_reply',

@@ -13,9 +13,9 @@ return new class extends Migration
             $table->string('phone');
             $table->string('code');
             $table->string('type');
-            $table->timestampTz('expires_at');
-            $table->timestampTz('used_at')->nullable();
-            $table->timestampsTz();
+            $table->timestamp('expires_at');
+            $table->timestamp('used_at')->nullable();
+            $table->timestamps();
         });
     }
 

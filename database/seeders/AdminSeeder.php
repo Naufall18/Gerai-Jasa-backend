@@ -10,7 +10,7 @@ class AdminSeeder extends Seeder
     public function run(): void
     {
         User::updateOrCreate(
-            ['email' => 'admin@bookly.id'],
+            ['email' => 'admin@geraijasa.id'],
             [
                 'name' => 'Super Admin',
                 'phone' => '+6281000000001',

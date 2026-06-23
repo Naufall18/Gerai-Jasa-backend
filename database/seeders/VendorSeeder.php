@@ -19,15 +19,15 @@ class VendorSeeder extends Seeder
 
         $vendors = [
             [
-                'user' => ['name' => 'Salon Cantika', 'email' => 'salon.cantika@bookly.id', 'phone' => '+6281200000001'],
+                'user' => ['name' => 'Salon Cantika', 'email' => 'salon.cantika@geraijasa.id', 'phone' => '+6281200000001'],
                 'vendor' => ['name' => 'Salon Cantika', 'slug' => 'salon-cantika', 'description' => 'Salon kecantikan terbaik di Jakarta', 'address' => 'Jl. Sudirman No. 10, Jakarta Selatan', 'city' => 'Jakarta', 'lat' => -6.2088, 'lng' => 106.8456, 'category_id' => $salonCategory?->id, 'status' => 'active', 'commission_rate' => 10.00, 'rating_avg' => 4.50, 'rating_count' => 120, 'is_featured' => true],
             ],
             [
-                'user' => ['name' => 'Klinik Sehat Sentosa', 'email' => 'klinik.sehat@bookly.id', 'phone' => '+6281200000002'],
+                'user' => ['name' => 'Klinik Sehat Sentosa', 'email' => 'klinik.sehat@geraijasa.id', 'phone' => '+6281200000002'],
                 'vendor' => ['name' => 'Klinik Sehat Sentosa', 'slug' => 'klinik-sehat-sentosa', 'description' => 'Klinik kesehatan umum dan gigi', 'address' => 'Jl. Gatot Subroto No. 25, Jakarta Selatan', 'city' => 'Jakarta', 'lat' => -6.2350, 'lng' => 106.8270, 'category_id' => $klinikCategory?->id, 'status' => 'active', 'commission_rate' => 8.00, 'rating_avg' => 4.70, 'rating_count' => 85, 'is_featured' => true],
             ],
             [
-                'user' => ['name' => 'Bengkel Jaya Motor', 'email' => 'bengkel.jaya@bookly.id', 'phone' => '+6281200000003'],
+                'user' => ['name' => 'Bengkel Jaya Motor', 'email' => 'bengkel.jaya@geraijasa.id', 'phone' => '+6281200000003'],
                 'vendor' => ['name' => 'Bengkel Jaya Motor', 'slug' => 'bengkel-jaya-motor', 'description' => 'Bengkel mobil terpercaya sejak 2005', 'address' => 'Jl. Fatmawati No. 33, Jakarta Selatan', 'city' => 'Jakarta', 'lat' => -6.2900, 'lng' => 106.7970, 'category_id' => $bengkelCategory?->id, 'status' => 'active', 'commission_rate' => 12.00, 'rating_avg' => 4.20, 'rating_count' => 60, 'is_featured' => false],
             ],
         ];

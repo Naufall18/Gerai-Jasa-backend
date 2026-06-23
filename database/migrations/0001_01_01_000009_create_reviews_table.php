@@ -16,9 +16,9 @@ return new class extends Migration
             $table->tinyInteger('rating')->unsigned();
             $table->text('comment')->nullable();
             $table->text('vendor_reply')->nullable();
-            $table->timestampTz('replied_at')->nullable();
+            $table->timestamp('replied_at')->nullable();
             $table->boolean('is_visible')->default(true);
-            $table->timestampsTz();
+            $table->timestamps();
 
             $table->foreign('booking_id')->references('id')->on('bookings')->onDelete('cascade');
             $table->foreign('customer_id')->references('id')->on('users')->onDelete('cascade');

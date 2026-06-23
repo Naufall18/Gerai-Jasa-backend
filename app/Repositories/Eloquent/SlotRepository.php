@@ -18,7 +18,7 @@ class SlotRepository implements SlotRepositoryInterface
             ->where('slot_date', $date)
             ->where('is_available', true)
             ->whereRaw('booked_count < capacity')
-            ->when($serviceId, fn ($q) => $q->where('service_id', $serviceId)->orWhereNull('service_id'))
+            ->when($serviceId, fn ($q) => $q->where(fn ($sub) => $sub->where('service_id', $serviceId)->orWhereNull('service_id')))
             ->orderBy('slot_time')
             ->get();
     }

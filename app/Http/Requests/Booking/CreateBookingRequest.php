@@ -2,34 +2,62 @@
 
 namespace App\Http\Requests\Booking;
 
+use App\Models\Service;
+use App\Models\TimeSlot;
 use Illuminate\Foundation\Http\FormRequest;
 
 class CreateBookingRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user() !== null; // must be authenticated (sanctum)
+        return $this->user() !== null;
     }
 
     public function rules(): array
     {
         return [
-            'vendor_id' => ['required', 'uuid'],
-            'service_id' => ['nullable', 'uuid'],
-            'time_slot_id' => ['required', 'uuid'],
-            'total_price' => ['required', 'numeric', 'min:0'],
+            'vendor_id'      => ['required', 'uuid', 'exists:vendors,id'],
+            'service_id'     => ['nullable', 'uuid', 'exists:services,id'],
+            'time_slot_id'   => ['required', 'uuid', 'exists:time_slots,id'],
             'payment_method' => ['required', 'in:cod,midtrans,xendit'],
-            'notes' => ['nullable', 'string', 'max:1000'],
+            'notes'          => ['nullable', 'string', 'max:1000'],
             'special_requests' => ['nullable', 'string', 'max:2000'],
         ];
     }
 
-    protected function prepareForValidation(): void
+    /**
+     * After validation, inject the real price from the service record
+     * so the client cannot manipulate total_price.
+     */
+    public function withValidator($validator): void
     {
-        if ($this->has('total_price')) {
-            $this->merge([
-                'total_price' => (float) $this->input('total_price'),
-            ]);
-        }
+        $validator->after(function ($validator) {
+            $serviceId = $this->input('service_id');
+
+            if ($serviceId) {
+                $service = Service::find($serviceId);
+
+                if (!$service) {
+                    $validator->errors()->add('service_id', 'Service not found.');
+                    return;
+                }
+
+                if (!$service->is_active) {
+                    $validator->errors()->add('service_id', 'This service is currently unavailable.');
+                    return;
+                }
+
+                if ((string) $service->vendor_id !== (string) $this->input('vendor_id')) {
+                    $validator->errors()->add('service_id', 'Service does not belong to this vendor.');
+                    return;
+                }
+
+                // Override total_price with the real service price (cannot be manipulated by client)
+                $this->merge(['total_price' => (float) $service->price]);
+            } else {
+                // No service selected — default to 0 (vendor will set price manually)
+                $this->merge(['total_price' => 0.0]);
+            }
+        });
     }
 }

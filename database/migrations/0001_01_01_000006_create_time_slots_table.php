@@ -17,7 +17,7 @@ return new class extends Migration
             $table->integer('capacity')->default(1);
             $table->integer('booked_count')->default(0);
             $table->boolean('is_available')->default(true);
-            $table->timestampsTz();
+            $table->timestamps();
 
             $table->foreign('vendor_id')->references('id')->on('vendors')->onDelete('cascade');
             $table->foreign('service_id')->references('id')->on('services')->onDelete('set null');

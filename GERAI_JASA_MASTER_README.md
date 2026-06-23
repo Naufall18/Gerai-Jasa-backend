@@ -6,7 +6,7 @@
 # BAGIAN 1 — PROJECT OVERVIEW
 
 ## Nama Project
-**Bookly** — Platform booking multi-vendor (salon, klinik, bengkel, dan sejenisnya)
+**Gerai Jasa** — Platform booking multi-vendor (salon, klinik, bengkel, dan sejenisnya)
 
 ## Tech Stack
 | Layer | Teknologi |
@@ -24,7 +24,7 @@
 
 ## Struktur Repo (Monorepo)
 ```
-bookly/
+geraijasa/
 ├── backend/          ← Laravel 11 API
 ├── web/              ← React + TypeScript (Admin & Vendor Dashboard)
 ├── mobile/           ← Flutter customer app
@@ -42,7 +42,7 @@ bookly/
 ---
 
 ```
-You are a senior full-stack engineer helping build "Bookly" — a multi-vendor booking platform for Indonesia market (salons, clinics, workshops, etc.).
+You are a senior full-stack engineer helping build "Gerai Jasa" — a multi-vendor booking platform for Indonesia market (salons, clinics, workshops, etc.).
 
 ## Project Structure
 Monorepo with 3 apps:
@@ -191,7 +191,7 @@ Now, whenever I say "build [feature]", follow the full stack flow above.
 ## FASE 1A — Setup Project
 
 ```
-Initialize the Bookly monorepo:
+Initialize the Gerai Jasa monorepo:
 
 1. Create Laravel 11 project in `backend/` with:
    - Install: sanctum, spatie/laravel-permission, intervention/image, spatie/laravel-query-builder, laravel/horizon, predis/predis
@@ -221,7 +221,7 @@ Show all file paths and complete code for each file created.
 ## FASE 1B — Database & Auth
 
 ```
-Build the complete database schema and authentication for Bookly:
+Build the complete database schema and authentication for Gerai Jasa:
 
 Create all Laravel migrations in this order:
 1. users (id uuid, name, email unique, phone unique, role enum, avatar_url, fcm_token, email_verified_at, phone_verified_at, is_active, timestamps, softDeletes)
@@ -248,7 +248,7 @@ Then build:
 ## FASE 1C — Booking Engine
 
 ```
-Build the core booking engine for Bookly:
+Build the core booking engine for Gerai Jasa:
 
 1. SlotGenerationService:
    - Method generateForVendor(Vendor $vendor, int $days = 60)
@@ -296,7 +296,7 @@ Show complete code for all files.
 ## FASE 2 — React Dashboard
 
 ```
-Build the React TypeScript dashboard for Bookly with these pages:
+Build the React TypeScript dashboard for Gerai Jasa with these pages:
 
 Design system: Tailwind CSS + shadcn/ui (New York style).
 Color scheme: Primary = Indigo (#6366F1), use slate for neutrals.
@@ -336,7 +336,7 @@ Add subtle animations using tailwindcss-animate (already included in shadcn).
 ## FASE 3 — Flutter Customer App
 
 ```
-Build the Flutter customer app for Bookly with complete screens:
+Build the Flutter customer app for Gerai Jasa with complete screens:
 
 Design: Modern, clean, warm color palette.
 Primary color: Indigo (#6366F1) with coral accent (#F97316).

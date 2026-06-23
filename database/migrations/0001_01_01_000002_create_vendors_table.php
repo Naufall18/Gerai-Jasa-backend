@@ -23,10 +23,10 @@ return new class extends Migration
             $table->decimal('commission_rate', 5, 2)->default(0.00);
             $table->decimal('rating_avg', 3, 2)->default(0.0);
             $table->unsignedInteger('rating_count')->default(0);
-            $table->jsonb('meta')->nullable();
+            $table->json('meta')->nullable();
             $table->boolean('is_featured')->default(false);
-            $table->timestampsTz();
-            $table->softDeletesTz();
+            $table->timestamps();
+            $table->softDeletes();
 
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
             $table->foreign('category_id')->references('id')->on('categories')->onDelete('cascade');

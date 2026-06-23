@@ -14,13 +14,14 @@ return new class extends Migration
             $table->string('email')->unique()->nullable();
             $table->string('phone')->unique()->nullable();
             $table->enum('role', ['customer', 'vendor', 'admin'])->default('customer');
+            $table->string('password')->nullable();
             $table->string('avatar_url')->nullable();
             $table->string('fcm_token')->nullable();
             $table->timestamp('email_verified_at')->nullable();
             $table->timestamp('phone_verified_at')->nullable();
             $table->boolean('is_active')->default(true);
-            $table->timestampsTz();
-            $table->softDeletesTz();
+            $table->timestamps();
+            $table->softDeletes();
         });
     }
 

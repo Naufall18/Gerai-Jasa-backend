@@ -15,10 +15,10 @@ return new class extends Migration
             $table->decimal('amount', 12, 2);
             $table->enum('status', ['pending', 'paid', 'failed', 'refunded'])->default('pending');
             $table->string('gateway_ref')->nullable();
-            $table->jsonb('gateway_response')->nullable();
-            $table->timestampTz('paid_at')->nullable();
-            $table->timestampTz('expired_at')->nullable();
-            $table->timestampsTz();
+            $table->json('gateway_response')->nullable();
+            $table->timestamp('paid_at')->nullable();
+            $table->timestamp('expired_at')->nullable();
+            $table->timestamps();
 
             $table->foreign('booking_id')->references('id')->on('bookings')->onDelete('cascade');
         });

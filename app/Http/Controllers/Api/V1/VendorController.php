@@ -46,6 +46,15 @@ class VendorController extends Controller
     {
         $vendor = $this->vendorRepository->findBySlug($slug);
 
+        if (!$vendor) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Vendor not found.',
+                'data' => null,
+                'meta' => [],
+            ], 404);
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Vendor details retrieved successfully.',
@@ -56,10 +65,20 @@ class VendorController extends Controller
 
     public function getSlots(string $vendorId): JsonResponse
     {
+        $date = request('date');
+        if (!$date) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Date parameter is required.',
+                'data' => null,
+                'meta' => [],
+            ], 422);
+        }
+
         $slots = $this->bookingService->getAvailableSlots(
             $vendorId,
             request('service_id'),
-            request('date')
+            $date
         );
 
         return response()->json([
