@@ -107,6 +107,7 @@ class NotificationService
         $vendor = $booking->vendor;
         $service = $booking->service;
         $timeSlot = $booking->timeSlot;
+        $serviceName = $service?->name ?? '-';
 
         if (!$customer || !$vendor) {
             Log::warning('sendBookingConfirmation: Missing customer or vendor.', ['booking_id' => $booking->id]);
@@ -131,7 +132,7 @@ class NotificationService
                 . "Halo *{$customer->name}*,\n\n"
                 . "Booking Anda telah dikonfirmasi:\n"
                 . "📍 Vendor: *{$vendor->name}*\n"
-                . "🛎 Layanan: *{$service?->name ?? '-'}*\n"
+                . "🛎 Layanan: *{$serviceName}*\n"
                 . "📅 Tanggal: *{$timeSlot?->slot_date}*\n"
                 . "⏰ Jam: *{$timeSlot?->slot_time}*\n"
                 . "🔖 Kode: *{$booking->booking_code}*\n\n"

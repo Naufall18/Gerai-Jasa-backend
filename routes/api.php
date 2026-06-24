@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\V1\AdminCategoryController;
 use App\Http\Controllers\Api\V1\AdminUserController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\BookingController;
@@ -77,6 +78,7 @@ Route::prefix('v1')->group(function () {
         // Admin management routes (role: admin — enforced in controller)
         Route::prefix('admin')->group(function () {
             Route::get('/users', [AdminUserController::class, 'index']);
+            Route::post('/categories', [AdminCategoryController::class, 'store']);
         });
     });
 
