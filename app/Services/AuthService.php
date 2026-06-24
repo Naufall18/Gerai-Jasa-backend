@@ -134,7 +134,9 @@ class AuthService
                 'phone' => $this->normalizePhone($data['phone']),
                 'role' => $data['role'] ?? 'vendor',
                 'is_active' => true,
-                'password' => bcrypt($data['password']),
+                // OTP customers have no password (they log in by phone); give them
+                // a random unusable one so the column is never null.
+                'password' => bcrypt($data['password'] ?? \Illuminate\Support\Str::random(32)),
             ]);
 
             $token = $user->createToken('auth_token')->plainTextToken;
@@ -178,6 +180,10 @@ class AuthService
 
         $token = $user->createToken('auth_token')->plainTextToken;
 
+        if ($user->role === 'vendor') {
+            $user->loadMissing('vendor');
+        }
+
         return [
             'success' => true,
             'message' => 'Login successful',
@@ -197,6 +203,12 @@ class AuthService
      */
     public function me(User $user): array
     {
+        // Load the vendor profile so the dashboard knows which vendor this account
+        // manages (used by vendor profile/schedule/services pages).
+        if ($user->role === 'vendor') {
+            $user->loadMissing('vendor');
+        }
+
         return [
             'success' => true,
             'data' => $user,
