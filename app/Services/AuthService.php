@@ -132,7 +132,8 @@ class AuthService
                 'name' => $data['name'],
                 'email' => $data['email'],
                 'phone' => $this->normalizePhone($data['phone']),
-                'role' => $data['role'] ?? 'vendor',
+                // Default to the least-privileged role; 'admin' is rejected by RegisterRequest.
+                'role' => $data['role'] ?? 'customer',
                 'is_active' => true,
                 // OTP customers have no password (they log in by phone); give them
                 // a random unusable one so the column is never null.

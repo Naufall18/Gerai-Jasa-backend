@@ -45,7 +45,7 @@ class NotificationService
             ]);
 
             if ($response->successful()) {
-                Log::info('FCM push sent successfully.', ['token' => substr($fcmToken, 0, 20) . '...']);
+                Log::info('FCM push sent successfully.');
                 return true;
             }
 
@@ -84,7 +84,8 @@ class NotificationService
             ]);
 
             if ($response->successful()) {
-                Log::info('WhatsApp message sent via Fonnte.', ['phone' => $phone]);
+                // Do not log the phone number (PII).
+                Log::info('WhatsApp message sent via Fonnte.');
                 return true;
             }
 
