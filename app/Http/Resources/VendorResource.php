@@ -39,6 +39,7 @@ class VendorResource extends JsonResource
             'category' => new CategoryResource($this->whenLoaded('category')),
             'services' => ServiceResource::collection($this->whenLoaded('services')),
             'photos' => VendorPhotoResource::collection($this->whenLoaded('photos')),
+            'schedules' => ScheduleResource::collection($this->whenLoaded('schedules')),
         ];
     }
 }
