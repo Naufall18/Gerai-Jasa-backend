@@ -24,17 +24,28 @@ class BookingService
      */
     public function getAvailableSlots(string $vendorId, ?string $serviceId, string $date)
     {
-        $cacheKey = "slots:{$vendorId}:{$serviceId}:{$date}";
+        // Cache per vendor+date only. A single slot can appear in results for
+        // multiple service filters (service-specific OR vendor-wide null-service),
+        // so keying the cache by service_id made invalidation incorrect/stale.
+        $cacheKey = "slots:{$vendorId}:{$date}";
 
-        return Cache::remember($cacheKey, 60, function () use ($vendorId, $serviceId, $date) {
+        $slots = Cache::remember($cacheKey, 60, function () use ($vendorId, $date) {
             return TimeSlot::where('vendor_id', $vendorId)
                 ->where('slot_date', $date)
                 ->where('is_available', true)
                 ->whereRaw('booked_count < capacity')
-                ->when($serviceId, fn ($q) => $q->where(fn ($sub) => $sub->where('service_id', $serviceId)->orWhereNull('service_id')))
                 ->orderBy('slot_time')
                 ->get();
         });
+
+        // Filter by service in memory so the cache entry stays valid for any filter.
+        if ($serviceId) {
+            $slots = $slots->filter(
+                fn ($slot) => $slot->service_id === $serviceId || $slot->service_id === null
+            )->values();
+        }
+
+        return $slots;
     }
 
     /**
@@ -88,8 +99,8 @@ class BookingService
                 'status' => 'pending',
             ]);
 
-            // Invalidate slot cache
-            Cache::forget("slots:{$booking->vendor_id}:{$booking->service_id}:{$slot->slot_date}");
+            // Invalidate slot cache (keyed by vendor+date)
+            Cache::forget("slots:{$booking->vendor_id}:{$slot->slot_date}");
 
             return $booking->load(['vendor', 'service', 'timeSlot', 'payment']);
         });
@@ -217,7 +228,7 @@ class BookingService
                 $lockedSlot->decrement('booked_count');
                 $lockedSlot->update(['is_available' => true]);
 
-                Cache::forget("slots:{$booking->vendor_id}:{$booking->service_id}:{$lockedSlot->slot_date}");
+                Cache::forget("slots:{$booking->vendor_id}:{$lockedSlot->slot_date}");
             }
 
             // Trigger refund if already paid

@@ -54,6 +54,7 @@ class MidtransService
 
         $response = Http::withBasicAuth($serverKey, '')
             ->acceptJson()
+            ->timeout(15)
             ->post($endpoint, $payload);
 
         if ($response->failed()) {
