@@ -56,7 +56,7 @@ Route::prefix('v1')->group(function () {
         });
 
         // Vendor management routes (role: vendor)
-        Route::prefix('vendor')->group(function () {
+        Route::prefix('vendor')->middleware('role:vendor')->group(function () {
             Route::prefix('bookings')->group(function () {
                 Route::get('/', [VendorBookingController::class, 'index']);
                 Route::patch('/{id}/confirm', [VendorBookingController::class, 'confirm']);
@@ -76,8 +76,8 @@ Route::prefix('v1')->group(function () {
             Route::delete('/services/{id}', [VendorServiceController::class, 'destroy']);
         });
 
-        // Admin management routes (role: admin — enforced in controller)
-        Route::prefix('admin')->group(function () {
+        // Admin management routes (role: admin — enforced by middleware)
+        Route::prefix('admin')->middleware('role:admin')->group(function () {
             Route::get('/users', [AdminUserController::class, 'index']);
             Route::get('/bookings', [AdminBookingController::class, 'index']);
             Route::post('/categories', [AdminCategoryController::class, 'store']);

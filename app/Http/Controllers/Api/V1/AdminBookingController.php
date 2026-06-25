@@ -7,7 +7,6 @@ use App\Http\Resources\BookingResource;
 use App\Services\BookingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 
 class AdminBookingController extends Controller
 {
@@ -22,35 +21,21 @@ class AdminBookingController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        /** @var \App\Models\User|null $user */
-        $user = Auth::user();
-
-        if (!$user || $user->role !== 'admin') {
-            return response()->json([
-                'success' => false,
-                'message' => 'Forbidden. Admin access required.',
-                'data' => null,
-                'meta' => [],
-            ], 403);
-        }
+        // Authorization enforced by the 'role:admin' route middleware.
+        $request->validate([
+            'status' => 'sometimes|in:pending,confirmed,in_progress,completed,cancelled,awaiting_payment',
+        ]);
 
         $bookings = $this->bookingService->listAllBookings(
             $request->query('status'),
             (int) $request->query('per_page', 20)
         );
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Bookings retrieved successfully.',
-            'data' => BookingResource::collection($bookings),
-            'meta' => [
-                'pagination' => [
-                    'current_page' => $bookings->currentPage(),
-                    'per_page' => $bookings->perPage(),
-                    'total' => $bookings->total(),
-                    'last_page' => $bookings->lastPage(),
-                ],
-            ],
-        ]);
+        return $this->successResponse(
+            BookingResource::collection($bookings),
+            'Bookings retrieved successfully.',
+            200,
+            $this->paginationMeta($bookings)
+        );
     }
 }

@@ -239,13 +239,7 @@ class BookingService
                 ]);
             }
 
-            // Dispatch cancellation notification
-            \App\Jobs\SendBookingCancellationJob::dispatchIf(
-                class_exists(\App\Jobs\SendBookingCancellationJob::class),
-                $booking
-            );
-
-            // Use inline notification instead
+            // Notify the customer of the cancellation.
             app(\App\Services\NotificationService::class)->sendBookingCancellation($booking);
 
             return $booking->fresh(['vendor', 'service', 'customer', 'timeSlot', 'payment']);

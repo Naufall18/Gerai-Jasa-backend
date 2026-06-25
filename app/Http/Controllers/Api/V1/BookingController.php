@@ -21,18 +21,12 @@ class BookingController extends Controller
     {
         $bookings = $this->bookingService->listCustomerBookings((string) Auth::id());
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Customer bookings retrieved successfully.',
-            'data' => BookingResource::collection($bookings),
-            'meta' => [
-                'pagination' => [
-                    'current_page' => $bookings->currentPage(),
-                    'per_page' => $bookings->perPage(),
-                    'total' => $bookings->total(),
-                ],
-            ],
-        ]);
+        return $this->successResponse(
+            BookingResource::collection($bookings),
+            'Customer bookings retrieved successfully.',
+            200,
+            $this->paginationMeta($bookings)
+        );
     }
 
     public function show(string $id): JsonResponse
