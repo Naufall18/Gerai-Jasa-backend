@@ -14,7 +14,7 @@ class VendorRepository implements VendorRepositoryInterface
 
     public function findBySlug(string $slug): ?Vendor
     {
-        return Vendor::with(['category', 'services', 'photos'])->where('slug', $slug)->first();
+        return Vendor::with(['category', 'services', 'photos', 'schedules'])->where('slug', $slug)->first();
     }
 
     public function upsert(array $data): Vendor

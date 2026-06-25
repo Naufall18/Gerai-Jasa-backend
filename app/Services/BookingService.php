@@ -141,6 +141,21 @@ class BookingService
     }
 
     /**
+     * List all bookings across the platform (admin view), with optional status filter.
+     *
+     * @param string|null $status
+     * @param int $perPage
+     * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator
+     */
+    public function listAllBookings(?string $status = null, int $perPage = 20)
+    {
+        return Booking::with(['customer', 'vendor', 'service', 'timeSlot', 'payment'])
+            ->when($status, fn ($query) => $query->where('status', $status))
+            ->orderByDesc('created_at')
+            ->paginate($perPage);
+    }
+
+    /**
      * Confirm a booking (vendor action).
      *
      * @param string $bookingId
