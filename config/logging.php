@@ -73,6 +73,19 @@ return [
             'replace_placeholders' => true,
         ],
 
+        // Opt-in JSON lines for log aggregators (set LOG_CHANNEL=structured
+        // or add it to LOG_STACK). Each line includes shared context (request_id).
+        'structured' => [
+            'driver' => 'monolog',
+            'level' => env('LOG_LEVEL', 'debug'),
+            'handler' => StreamHandler::class,
+            'handler_with' => [
+                'stream' => storage_path('logs/laravel.log'),
+            ],
+            'formatter' => \Monolog\Formatter\JsonFormatter::class,
+            'processors' => [PsrLogMessageProcessor::class],
+        ],
+
         'slack' => [
             'driver' => 'slack',
             'url' => env('LOG_SLACK_WEBHOOK_URL'),

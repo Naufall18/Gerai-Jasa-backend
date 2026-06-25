@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\V1\AdminUserController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\BookingController;
 use App\Http\Controllers\Api\V1\CategoryController;
+use App\Http\Controllers\Api\V1\HealthController;
 use App\Http\Controllers\Api\V1\ReviewController;
 use App\Http\Controllers\Api\V1\VendorBookingController;
 use App\Http\Controllers\Api\V1\VendorController;
@@ -21,6 +22,9 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::prefix('v1')->group(function () {
+    // Readiness probe (DB + cache reachable). Public; complements '/up' liveness.
+    Route::get('/health/ready', [HealthController::class, 'ready']);
+
     // Guest Auth routes — throttled to blunt brute-force / OTP abuse.
     Route::prefix('auth')->group(function () {
         Route::post('/request-otp', [AuthController::class, 'requestOtp'])->middleware('throttle:5,1');
