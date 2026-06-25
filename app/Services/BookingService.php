@@ -283,6 +283,37 @@ class BookingService
     }
 
     /**
+     * Confirm a booking after a successful gateway payment (webhook-triggered).
+     * Idempotent: acts only on a still-pending booking, and locks the row to avoid
+     * racing with a concurrent vendor confirmation.
+     *
+     * @param string $bookingId
+     * @return void
+     */
+    public function confirmFromPayment(string $bookingId): void
+    {
+        $booking = DB::transaction(function () use ($bookingId) {
+            $booking = Booking::where('id', $bookingId)->lockForUpdate()->first();
+
+            if (!$booking || $booking->status !== 'pending') {
+                return null;
+            }
+
+            $booking->update([
+                'status' => 'confirmed',
+                'confirmed_at' => now(),
+            ]);
+
+            return $booking;
+        });
+
+        // Dispatch after commit so the queued job observes the persisted change.
+        if ($booking) {
+            \App\Jobs\SendBookingConfirmationJob::dispatch($booking);
+        }
+    }
+
+    /**
      * Generate a unique booking code.
      *
      * @return string
