@@ -17,6 +17,10 @@ return Application::configure(basePath: dirname(__DIR__))
             \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
         ]);
 
+        $middleware->api(append: [
+            \App\Http\Middleware\AssignRequestId::class,
+        ]);
+
         $middleware->alias([
             // Custom role guard backed by the users.role column (not spatie tables).
             'role' => \App\Http\Middleware\EnsureRole::class,
