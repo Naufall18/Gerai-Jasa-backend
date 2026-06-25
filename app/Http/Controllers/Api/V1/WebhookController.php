@@ -2,12 +2,9 @@
 
 namespace App\Http\Controllers\Api\V1;
 
-use App\Jobs\SendBookingConfirmationJob;
-use App\Models\Booking;
 use App\Models\Payment;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class WebhookController
@@ -160,27 +157,8 @@ class WebhookController
      */
     private function handleSuccessfulPayment(Payment $payment): void
     {
-        $booking = Booking::where('id', $payment->booking_id)->first();
-
-        if (!$booking) {
-            Log::warning('Webhook: Booking not found for payment', ['payment_id' => $payment->id]);
-            return;
-        }
-
-        // Only update if booking is pending
-        if ($booking->status === 'pending') {
-            $booking->update([
-                'status' => 'confirmed',
-                'confirmed_at' => now(),
-            ]);
-
-            // Dispatch notification job (must receive the Booking model, not its id).
-            SendBookingConfirmationJob::dispatch($booking);
-
-            Log::info('Booking confirmed via payment webhook', [
-                'booking_id' => $booking->id,
-                'booking_code' => $booking->booking_code,
-            ]);
-        }
+        // Booking confirmation (row lock + idempotency + notification dispatch)
+        // lives in the service so it is identical to other confirmation paths.
+        app(\App\Services\BookingService::class)->confirmFromPayment($payment->booking_id);
     }
 }
