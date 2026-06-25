@@ -18,7 +18,9 @@ class RegisterRequest extends FormRequest
             'email' => 'required|email|unique:users,email',
             'phone' => ['required', 'string', 'regex:/^(\+62|0)[0-9]{9,12}$/', 'unique:users,phone'],
             'password' => 'nullable|string|min:8|confirmed',
-            'role' => 'in:vendor,admin,customer',
+            // SECURITY: never allow self-registration as admin via the public endpoint.
+            // Admin accounts are provisioned via seeder/console only.
+            'role' => 'sometimes|in:vendor,customer',
         ];
     }
 

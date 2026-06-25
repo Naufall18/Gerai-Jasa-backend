@@ -23,7 +23,8 @@ class WebhookController
     {
         try {
             $payload = $request->all();
-            Log::info('Midtrans webhook received', $payload);
+            // Do NOT log the full payload (contains customer/payment data).
+            Log::info('Midtrans webhook received', ['order_id' => $payload['order_id'] ?? null]);
 
             // Verify Midtrans signature
             $signatureKey = $request->header('X-Midtrans-Signature');
@@ -32,13 +33,17 @@ class WebhookController
             $grossAmount = $payload['gross_amount'] ?? '';
             $serverKey = config('services.midtrans.server_key');
 
+            // Fail closed if the gateway secret is not configured.
+            if (empty($serverKey)) {
+                Log::error('Midtrans webhook: server key not configured.');
+                return response()->json(['success' => false, 'message' => 'Gateway not configured'], 500);
+            }
+
             $expectedSignature = hash('sha512', $orderId . $statusCode . $grossAmount . $serverKey);
 
             if (!$signatureKey || !hash_equals($expectedSignature, $signatureKey)) {
-                Log::warning('Midtrans webhook signature verification failed', [
-                    'expected' => $expectedSignature,
-                    'received' => $signatureKey,
-                ]);
+                // Never log the expected signature or received token (secret material).
+                Log::warning('Midtrans webhook signature verification failed', ['order_id' => $orderId]);
                 return response()->json(['success' => false, 'message' => 'Invalid signature'], 401);
             }
 
@@ -90,17 +95,22 @@ class WebhookController
     {
         try {
             $payload = $request->all();
-            Log::info('Xendit webhook received', $payload);
+            // Do NOT log the full payload (contains customer/payment data).
+            Log::info('Xendit webhook received', ['external_id' => $payload['external_id'] ?? null]);
 
             // Verify Xendit callback token
             $callbackToken = $request->header('X-Callback-Token');
             $expectedToken = config('services.xendit.webhook_token');
 
+            // Fail closed if the gateway secret is not configured.
+            if (empty($expectedToken)) {
+                Log::error('Xendit webhook: callback token not configured.');
+                return response()->json(['success' => false, 'message' => 'Gateway not configured'], 500);
+            }
+
             if (!$callbackToken || !hash_equals($expectedToken, $callbackToken)) {
-                Log::warning('Xendit webhook callback token verification failed', [
-                    'expected' => $expectedToken,
-                    'received' => $callbackToken,
-                ]);
+                // Never log the expected/received token (secret material).
+                Log::warning('Xendit webhook callback token verification failed', ['external_id' => $payload['external_id'] ?? null]);
                 return response()->json(['success' => false, 'message' => 'Invalid callback token'], 401);
             }
 
@@ -164,8 +174,8 @@ class WebhookController
                 'confirmed_at' => now(),
             ]);
 
-            // Dispatch notification job
-            SendBookingConfirmationJob::dispatch($booking->id);
+            // Dispatch notification job (must receive the Booking model, not its id).
+            SendBookingConfirmationJob::dispatch($booking);
 
             Log::info('Booking confirmed via payment webhook', [
                 'booking_id' => $booking->id,

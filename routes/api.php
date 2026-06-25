@@ -21,12 +21,12 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::prefix('v1')->group(function () {
-    // Guest Auth routes
+    // Guest Auth routes — throttled to blunt brute-force / OTP abuse.
     Route::prefix('auth')->group(function () {
-        Route::post('/request-otp', [AuthController::class, 'requestOtp']);
-        Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
-        Route::post('/register', [AuthController::class, 'register']);
-        Route::post('/login', [AuthController::class, 'login']);
+        Route::post('/request-otp', [AuthController::class, 'requestOtp'])->middleware('throttle:5,1');
+        Route::post('/verify-otp', [AuthController::class, 'verifyOtp'])->middleware('throttle:6,1');
+        Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:5,1');
+        Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:6,1');
 
         // Protected Auth routes
         Route::middleware('auth:sanctum')->group(function () {
