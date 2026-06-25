@@ -16,11 +16,13 @@ class OTP extends Model
         'phone',
         'code',
         'type',
+        'attempts',
         'expires_at',
         'used_at',
     ];
 
     protected $casts = [
+        'attempts' => 'integer',
         'expires_at' => 'datetime',
         'used_at' => 'datetime',
     ];

@@ -43,8 +43,8 @@ class AuthService
             ];
         }
 
-        // Generate 6-digit OTP
-        $code = str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
+        // Generate 6-digit OTP using a cryptographically secure RNG.
+        $code = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
 
         // Save OTP
         OTP::create([
@@ -72,15 +72,34 @@ class AuthService
     {
         $phone = $this->normalizePhone($phone);
 
-        // Find valid OTP
+        // Find the latest unused, unexpired OTP for this phone (regardless of code,
+        // so we can count failed attempts and lock out brute force).
         $otp = OTP::where('phone', $phone)
-            ->where('code', $code)
             ->where('type', 'login')
             ->where('expires_at', '>', now())
-            ->where('used_at', null)
+            ->whereNull('used_at')
+            ->latest()
             ->first();
 
         if (!$otp) {
+            return [
+                'success' => false,
+                'message' => 'Invalid or expired OTP',
+            ];
+        }
+
+        // Lock out after too many wrong guesses; burn the OTP so it can't be reused.
+        if ($otp->attempts >= 5) {
+            $otp->update(['used_at' => now()]);
+            return [
+                'success' => false,
+                'message' => 'Too many attempts. Please request a new OTP.',
+            ];
+        }
+
+        // Constant-time comparison to avoid timing leaks.
+        if (!hash_equals((string) $otp->code, (string) $code)) {
+            $otp->increment('attempts');
             return [
                 'success' => false,
                 'message' => 'Invalid or expired OTP',

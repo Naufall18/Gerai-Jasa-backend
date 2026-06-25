@@ -23,3 +23,8 @@ Schedule::command('reminders:generate --type=day')
 Schedule::command('reminders:generate --type=hour')
     ->hourly()
     ->withoutOverlapping();
+
+// Keep a rolling 60-day window of bookable slots for active vendors.
+Schedule::command('slots:generate --days=60')
+    ->dailyAt('02:00')
+    ->withoutOverlapping();

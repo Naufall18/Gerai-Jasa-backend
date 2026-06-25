@@ -33,7 +33,7 @@ class VendorRepository implements VendorRepositoryInterface
             $query->where('category_id', $filters['category_id']);
         }
         if (isset($filters['city'])) {
-            $query->where('city', 'ilike', '%' . $filters['city'] . '%');
+            $query->where('city', 'like', '%' . $filters['city'] . '%');
         }
         if (isset($filters['status'])) {
             $query->where('status', $filters['status']);
@@ -44,9 +44,9 @@ class VendorRepository implements VendorRepositoryInterface
         if (isset($filters['search'])) {
             $q = $filters['search'];
             $query->where(function($builder) use ($q) {
-                $builder->where('name', 'ilike', "%$q%")
-                    ->orWhere('slug', 'ilike', "%$q%")
-                    ->orWhere('description', 'ilike', "%$q%");
+                $builder->where('name', 'like', "%$q%")
+                    ->orWhere('slug', 'like', "%$q%")
+                    ->orWhere('description', 'like', "%$q%");
             });
         }
 
