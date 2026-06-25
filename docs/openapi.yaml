@@ -1,0 +1,508 @@
+openapi: 3.0.3
+info:
+  title: Gerai Jasa API
+  version: "1.0.0"
+  description: >
+    REST API for the Gerai Jasa local-services marketplace.
+    All endpoints return a standard envelope:
+    `{ success, message, data, meta }`. List endpoints include
+    `meta.pagination.{current_page, per_page, total, last_page}`.
+    Clients must tolerate unknown/extra fields.
+servers:
+  - url: "{base}/api/v1"
+    variables:
+      base:
+        default: http://localhost:8000
+tags:
+  - name: Health
+  - name: Auth
+  - name: Catalog
+  - name: Bookings
+  - name: Vendor
+  - name: Admin
+  - name: Webhooks
+
+components:
+  securitySchemes:
+    sanctum:
+      type: http
+      scheme: bearer
+      description: Laravel Sanctum personal access token from /auth/login or /auth/verify-otp.
+  schemas:
+    Envelope:
+      type: object
+      properties:
+        success: { type: boolean }
+        message: { type: string }
+        data: {}
+        meta: { type: object }
+    Pagination:
+      type: object
+      properties:
+        pagination:
+          type: object
+          properties:
+            current_page: { type: integer }
+            per_page: { type: integer }
+            total: { type: integer }
+            last_page: { type: integer }
+    User:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        email: { type: string, nullable: true }
+        phone: { type: string, nullable: true }
+        role: { type: string, enum: [customer, vendor, admin] }
+        avatar_url: { type: string, nullable: true }
+        is_active: { type: boolean }
+        created_at: { type: string, format: date-time }
+    Category:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        slug: { type: string }
+        icon_url: { type: string, nullable: true }
+        description: { type: string, nullable: true }
+        is_active: { type: boolean }
+        sort_order: { type: integer }
+    Vendor:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        user_id: { type: string, format: uuid }
+        category_id: { type: string, format: uuid }
+        name: { type: string }
+        slug: { type: string }
+        description: { type: string, nullable: true }
+        address: { type: string, nullable: true }
+        city: { type: string, nullable: true }
+        status: { type: string, enum: [pending, active, suspended] }
+        commission_rate: { type: number }
+        rating_avg: { type: number }
+        rating_count: { type: integer }
+        is_featured: { type: boolean }
+        category: { $ref: '#/components/schemas/Category' }
+        services:
+          type: array
+          items: { $ref: '#/components/schemas/Service' }
+        schedules:
+          type: array
+          items: { $ref: '#/components/schemas/Schedule' }
+    Service:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        vendor_id: { type: string, format: uuid }
+        name: { type: string }
+        description: { type: string, nullable: true }
+        price: { type: number }
+        duration_minutes: { type: integer }
+        max_advance_days: { type: integer, nullable: true }
+        is_active: { type: boolean }
+    Schedule:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        vendor_id: { type: string, format: uuid }
+        day_of_week: { type: integer, minimum: 0, maximum: 6 }
+        open_time: { type: string, example: "08:00:00" }
+        close_time: { type: string, example: "17:00:00" }
+        is_closed: { type: boolean }
+    TimeSlot:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        vendor_id: { type: string, format: uuid }
+        service_id: { type: string, format: uuid, nullable: true }
+        slot_date: { type: string, format: date }
+        slot_time: { type: string, example: "10:00:00" }
+        capacity: { type: integer }
+        booked_count: { type: integer }
+        is_available: { type: boolean }
+    Booking:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        booking_code: { type: string, example: "BKL-AB12CD34" }
+        status: { type: string, enum: [pending, confirmed, in_progress, completed, cancelled] }
+        total_price: { type: number }
+        commission_amount: { type: number }
+        payment_method: { type: string, enum: [cod, midtrans, xendit] }
+        created_at: { type: string, format: date-time }
+        customer: { $ref: '#/components/schemas/User' }
+        vendor: { $ref: '#/components/schemas/Vendor' }
+        service: { $ref: '#/components/schemas/Service' }
+        time_slot: { $ref: '#/components/schemas/TimeSlot' }
+  responses:
+    Unauthorized:
+      description: Missing/invalid token
+      content: { application/json: { schema: { $ref: '#/components/schemas/Envelope' } } }
+    Forbidden:
+      description: Wrong role / not owner
+      content: { application/json: { schema: { $ref: '#/components/schemas/Envelope' } } }
+    ValidationError:
+      description: Unprocessable entity
+      content: { application/json: { schema: { $ref: '#/components/schemas/Envelope' } } }
+
+paths:
+  /health/ready:
+    get:
+      tags: [Health]
+      summary: Readiness probe (DB + cache). 503 when degraded.
+      responses:
+        '200': { description: Ready }
+        '503': { description: Degraded }
+
+  /auth/request-otp:
+    post:
+      tags: [Auth]
+      summary: Request login OTP (throttled 5/min)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [phone]
+              properties: { phone: { type: string, example: "081234567890" } }
+      responses: { '200': { description: OTP sent }, '429': { description: Too many requests } }
+  /auth/verify-otp:
+    post:
+      tags: [Auth]
+      summary: Verify OTP and login (throttled 6/min, locks after 5 failed attempts)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [phone, code]
+              properties:
+                phone: { type: string }
+                code: { type: string, example: "123456" }
+      responses: { '200': { description: Login success (token) }, '401': { description: Invalid/expired/locked } }
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Register (throttled 5/min). Role may be vendor|customer only — admin is rejected.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, phone]
+              properties:
+                name: { type: string }
+                email: { type: string, format: email }
+                phone: { type: string }
+                password: { type: string, minLength: 8 }
+                password_confirmation: { type: string }
+                role: { type: string, enum: [vendor, customer] }
+      responses:
+        '201': { description: Registered (token) }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Email/password login (throttled 6/min)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string }
+      responses: { '200': { description: Login success (token) }, '401': { description: Invalid credentials } }
+  /auth/me:
+    get:
+      tags: [Auth]
+      security: [{ sanctum: [] }]
+      summary: Current user (vendors include their vendor profile)
+      responses: { '200': { description: OK }, '401': { $ref: '#/components/responses/Unauthorized' } }
+  /auth/logout:
+    post:
+      tags: [Auth]
+      security: [{ sanctum: [] }]
+      summary: Revoke all tokens
+      responses: { '200': { description: Logged out } }
+  /auth/fcm-token:
+    post:
+      tags: [Auth]
+      security: [{ sanctum: [] }]
+      summary: Update FCM push token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, required: [fcm_token], properties: { fcm_token: { type: string } } }
+      responses: { '200': { description: Updated } }
+
+  /categories:
+    get:
+      tags: [Catalog]
+      summary: List active categories
+      responses: { '200': { description: OK } }
+  /vendors:
+    get:
+      tags: [Catalog]
+      summary: List/search vendors (paginated)
+      parameters:
+        - { name: category_id, in: query, schema: { type: string } }
+        - { name: city, in: query, schema: { type: string } }
+        - { name: min_rating, in: query, schema: { type: number } }
+        - { name: search, in: query, schema: { type: string } }
+        - { name: per_page, in: query, schema: { type: integer, default: 20 } }
+      responses: { '200': { description: OK } }
+  /vendors/{slug}:
+    get:
+      tags: [Catalog]
+      summary: Vendor detail (by slug) incl. services, photos, schedules
+      parameters: [{ name: slug, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: OK }, '404': { description: Not found } }
+  /vendors/{vendorId}/slots:
+    get:
+      tags: [Catalog]
+      summary: Available time slots for a date
+      parameters:
+        - { name: vendorId, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: date, in: query, required: true, schema: { type: string, format: date } }
+        - { name: service_id, in: query, schema: { type: string, format: uuid } }
+      responses: { '200': { description: OK }, '422': { description: date required } }
+  /vendors/{vendorId}/reviews:
+    get:
+      tags: [Catalog]
+      summary: Public vendor reviews (paginated)
+      parameters: [{ name: vendorId, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses: { '200': { description: OK } }
+
+  /bookings:
+    get:
+      tags: [Bookings]
+      security: [{ sanctum: [] }]
+      summary: Current customer's bookings (paginated)
+      responses: { '200': { description: OK }, '401': { $ref: '#/components/responses/Unauthorized' } }
+    post:
+      tags: [Bookings]
+      security: [{ sanctum: [] }]
+      summary: Create a booking (price is taken server-side from the service)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [vendor_id, time_slot_id, payment_method]
+              properties:
+                vendor_id: { type: string, format: uuid }
+                service_id: { type: string, format: uuid, nullable: true }
+                time_slot_id: { type: string, format: uuid }
+                payment_method: { type: string, enum: [cod, midtrans, xendit] }
+                notes: { type: string }
+                special_requests: { type: string }
+      responses: { '200': { description: Created }, '422': { $ref: '#/components/responses/ValidationError' } }
+  /bookings/{id}:
+    get:
+      tags: [Bookings]
+      security: [{ sanctum: [] }]
+      summary: Booking detail (owner only)
+      parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses: { '200': { description: OK }, '404': { description: Not found } }
+  /bookings/{id}/pay:
+    post:
+      tags: [Bookings]
+      security: [{ sanctum: [] }]
+      summary: Create a Midtrans Snap transaction
+      parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses: { '200': { description: Snap token }, '422': { description: Already paid }, '502': { description: Gateway error } }
+  /bookings/{id}/cancel:
+    patch:
+      tags: [Bookings]
+      security: [{ sanctum: [] }]
+      summary: Cancel a booking (customer or owning vendor); releases the slot
+      parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }]
+      requestBody:
+        content:
+          application/json:
+            schema: { type: object, properties: { reason: { type: string } } }
+      responses: { '200': { description: Cancelled } }
+  /bookings/{id}/review:
+    post:
+      tags: [Bookings]
+      security: [{ sanctum: [] }]
+      summary: Review a completed booking (once)
+      parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [rating]
+              properties:
+                rating: { type: integer, minimum: 1, maximum: 5 }
+                comment: { type: string }
+      responses: { '201': { description: Created }, '422': { description: Already reviewed / invalid } }
+
+  /vendor/bookings:
+    get:
+      tags: [Vendor]
+      security: [{ sanctum: [] }]
+      summary: Vendor's incoming bookings (role:vendor, paginated)
+      responses: { '200': { description: OK }, '403': { $ref: '#/components/responses/Forbidden' } }
+  /vendor/bookings/{id}/confirm:
+    patch:
+      tags: [Vendor]
+      security: [{ sanctum: [] }]
+      summary: Confirm a pending booking (role:vendor)
+      parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses: { '200': { description: Confirmed } }
+  /vendor/bookings/{id}/complete:
+    patch:
+      tags: [Vendor]
+      security: [{ sanctum: [] }]
+      summary: Complete a confirmed booking (role:vendor); COD marked paid
+      parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses: { '200': { description: Completed } }
+  /vendor/reviews/{id}/reply:
+    patch:
+      tags: [Vendor]
+      security: [{ sanctum: [] }]
+      summary: Reply to a review (role:vendor, owner only)
+      parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, required: [reply], properties: { reply: { type: string, maxLength: 500 } } }
+      responses: { '200': { description: Replied } }
+  /vendor/profile:
+    get:
+      tags: [Vendor]
+      security: [{ sanctum: [] }]
+      summary: Authenticated vendor's profile (role:vendor)
+      responses: { '200': { description: OK }, '403': { $ref: '#/components/responses/Forbidden' } }
+    patch:
+      tags: [Vendor]
+      security: [{ sanctum: [] }]
+      summary: Update vendor profile (role:vendor)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                description: { type: string }
+                address: { type: string }
+                city: { type: string }
+      responses: { '200': { description: Updated } }
+  /vendor/schedules:
+    patch:
+      tags: [Vendor]
+      security: [{ sanctum: [] }]
+      summary: Bulk upsert operating schedules (role:vendor)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [schedules]
+              properties:
+                schedules:
+                  type: array
+                  minItems: 1
+                  maxItems: 7
+                  items: { $ref: '#/components/schemas/Schedule' }
+      responses: { '200': { description: Updated } }
+  /vendor/services:
+    get:
+      tags: [Vendor]
+      security: [{ sanctum: [] }]
+      summary: List the vendor's services (role:vendor)
+      responses: { '200': { description: OK } }
+    post:
+      tags: [Vendor]
+      security: [{ sanctum: [] }]
+      summary: Create a service (role:vendor)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, price, duration_minutes]
+              properties:
+                name: { type: string }
+                description: { type: string }
+                price: { type: number }
+                duration_minutes: { type: integer, minimum: 15, maximum: 480 }
+                max_advance_days: { type: integer }
+      responses: { '201': { description: Created } }
+  /vendor/services/{id}:
+    patch:
+      tags: [Vendor]
+      security: [{ sanctum: [] }]
+      summary: Update a service (role:vendor, owner only)
+      parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses: { '200': { description: Updated } }
+    delete:
+      tags: [Vendor]
+      security: [{ sanctum: [] }]
+      summary: Delete a service (role:vendor, owner only)
+      parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses: { '200': { description: Deleted } }
+
+  /admin/users:
+    get:
+      tags: [Admin]
+      security: [{ sanctum: [] }]
+      summary: List users (role:admin, paginated)
+      parameters:
+        - { name: role, in: query, schema: { type: string, enum: [admin, vendor, customer] } }
+        - { name: search, in: query, schema: { type: string } }
+      responses: { '200': { description: OK }, '403': { $ref: '#/components/responses/Forbidden' } }
+  /admin/bookings:
+    get:
+      tags: [Admin]
+      security: [{ sanctum: [] }]
+      summary: List all bookings (role:admin, paginated)
+      parameters:
+        - { name: status, in: query, schema: { type: string, enum: [pending, confirmed, in_progress, completed, cancelled, awaiting_payment] } }
+      responses: { '200': { description: OK }, '403': { $ref: '#/components/responses/Forbidden' }, '422': { $ref: '#/components/responses/ValidationError' } }
+  /admin/categories:
+    post:
+      tags: [Admin]
+      security: [{ sanctum: [] }]
+      summary: Create a category (role:admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string }
+                description: { type: string }
+                icon_url: { type: string }
+                is_active: { type: boolean }
+                sort_order: { type: integer }
+      responses: { '201': { description: Created } }
+
+  /webhooks/midtrans:
+    post:
+      tags: [Webhooks]
+      summary: Midtrans payment callback (HMAC-SHA512 signature verified)
+      responses: { '200': { description: OK }, '401': { description: Invalid signature } }
+  /webhooks/xendit:
+    post:
+      tags: [Webhooks]
+      summary: Xendit payment callback (X-Callback-Token verified)
+      responses: { '200': { description: OK }, '401': { description: Invalid token } }
