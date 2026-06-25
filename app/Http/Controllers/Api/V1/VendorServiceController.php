@@ -3,10 +3,11 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Vendor\StoreServiceRequest;
+use App\Http\Requests\Vendor\UpdateServiceRequest;
 use App\Http\Resources\ServiceResource;
 use App\Models\Service;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class VendorServiceController extends Controller
@@ -43,17 +44,11 @@ class VendorServiceController extends Controller
     /**
      * POST /api/v1/vendor/services
      */
-    public function store(Request $request): JsonResponse
+    public function store(StoreServiceRequest $request): JsonResponse
     {
         $vendorId = $this->getVendorId();
 
-        $validated = $request->validate([
-            'name'             => 'required|string|max:100',
-            'description'      => 'nullable|string|max:500',
-            'price'            => 'required|numeric|min:0',
-            'duration_minutes' => 'required|integer|min:15|max:480',
-            'max_advance_days' => 'nullable|integer|min:1|max:365',
-        ]);
+        $validated = $request->validated();
 
         $service = Service::create([
             'vendor_id'        => $vendorId,
@@ -76,19 +71,12 @@ class VendorServiceController extends Controller
     /**
      * PATCH /api/v1/vendor/services/{id}
      */
-    public function update(Request $request, string $id): JsonResponse
+    public function update(UpdateServiceRequest $request, string $id): JsonResponse
     {
         $vendorId = $this->getVendorId();
         $service  = Service::where('id', $id)->where('vendor_id', $vendorId)->firstOrFail();
 
-        $validated = $request->validate([
-            'name'             => 'sometimes|string|max:100',
-            'description'      => 'nullable|string|max:500',
-            'price'            => 'sometimes|numeric|min:0',
-            'duration_minutes' => 'sometimes|integer|min:15|max:480',
-            'max_advance_days' => 'nullable|integer|min:1|max:365',
-            'is_active'        => 'sometimes|boolean',
-        ]);
+        $validated = $request->validated();
 
         $service->update($validated);
 

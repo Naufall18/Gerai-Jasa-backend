@@ -17,18 +17,7 @@ class AdminUserController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        /** @var \App\Models\User|null $user */
-        $user = Auth::user();
-
-        if (!$user || $user->role !== 'admin') {
-            return response()->json([
-                'success' => false,
-                'message' => 'Forbidden. Admin access required.',
-                'data' => null,
-                'meta' => [],
-            ], 403);
-        }
-
+        // Authorization enforced by the 'role:admin' route middleware.
         $query = User::query();
 
         // Optional filters
@@ -47,18 +36,11 @@ class AdminUserController extends Controller
         $users = $query->orderByDesc('created_at')
             ->paginate((int) $request->query('per_page', 20));
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Users retrieved successfully.',
-            'data' => UserResource::collection($users),
-            'meta' => [
-                'pagination' => [
-                    'current_page' => $users->currentPage(),
-                    'per_page' => $users->perPage(),
-                    'total' => $users->total(),
-                    'last_page' => $users->lastPage(),
-                ],
-            ],
-        ]);
+        return $this->successResponse(
+            UserResource::collection($users),
+            'Users retrieved successfully.',
+            200,
+            $this->paginationMeta($users)
+        );
     }
 }

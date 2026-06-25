@@ -3,10 +3,11 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Review\ReplyReviewRequest;
+use App\Http\Requests\Review\StoreReviewRequest;
 use App\Models\Booking;
 use App\Models\Review;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
@@ -16,13 +17,8 @@ class ReviewController extends Controller
      * Customer submits a review for a completed booking.
      * POST /api/v1/bookings/{id}/review
      */
-    public function store(Request $request, string $bookingId): JsonResponse
+    public function store(StoreReviewRequest $request, string $bookingId): JsonResponse
     {
-        $request->validate([
-            'rating' => 'required|integer|min:1|max:5',
-            'comment' => 'nullable|string|max:1000',
-        ]);
-
         $customerId = (string) Auth::id();
 
         $booking = Booking::where('id', $bookingId)
@@ -102,30 +98,20 @@ class ReviewController extends Controller
             ],
         ]);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Reviews retrieved successfully.',
-            'data' => $data,
-            'meta' => [
-                'pagination' => [
-                    'current_page' => $reviews->currentPage(),
-                    'per_page' => $reviews->perPage(),
-                    'total' => $reviews->total(),
-                ],
-            ],
-        ]);
+        return $this->successResponse(
+            $data,
+            'Reviews retrieved successfully.',
+            200,
+            $this->paginationMeta($reviews)
+        );
     }
 
     /**
      * Vendor replies to a review.
      * PATCH /api/v1/vendor/reviews/{id}/reply
      */
-    public function vendorReply(Request $request, string $reviewId): JsonResponse
+    public function vendorReply(ReplyReviewRequest $request, string $reviewId): JsonResponse
     {
-        $request->validate([
-            'reply' => 'required|string|max:500',
-        ]);
-
         /** @var \App\Models\User $user */
         $user = Auth::user();
         $vendorId = (string) $user->vendor?->id;

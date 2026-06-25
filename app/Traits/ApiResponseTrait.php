@@ -53,26 +53,39 @@ trait ApiResponseTrait
     }
 
     /**
-     * Return a paginated JSON response.
+     * Build the standard nested pagination meta block.
+     * Shape: meta.pagination.{current_page, per_page, total, last_page}
      *
-     * @param \Illuminate\Pagination\LengthAwarePaginator $paginator
-     * @param string $message
-     * @return JsonResponse
+     * @param \Illuminate\Contracts\Pagination\LengthAwarePaginator $paginator
+     * @return array
      */
-    public function paginatedResponse(\Illuminate\Pagination\LengthAwarePaginator $paginator, string $message = 'Success'): JsonResponse
+    public function paginationMeta(\Illuminate\Contracts\Pagination\LengthAwarePaginator $paginator): array
     {
-        return response()->json([
-            'success' => true,
-            'message' => $message,
-            'data' => $paginator->items(),
-            'meta' => [
+        return [
+            'pagination' => [
                 'current_page' => $paginator->currentPage(),
                 'per_page' => $paginator->perPage(),
                 'total' => $paginator->total(),
                 'last_page' => $paginator->lastPage(),
-                'from' => $paginator->firstItem(),
-                'to' => $paginator->lastItem(),
             ],
-        ], 200);
+        ];
+    }
+
+    /**
+     * Return a paginated JSON response using the standard envelope + nested meta.
+     *
+     * @param \Illuminate\Contracts\Pagination\LengthAwarePaginator $paginator
+     * @param mixed $data  Already-transformed data (e.g. a Resource collection).
+     * @param string $message
+     * @return JsonResponse
+     */
+    public function paginatedResponse(\Illuminate\Contracts\Pagination\LengthAwarePaginator $paginator, mixed $data = null, string $message = 'Success'): JsonResponse
+    {
+        return $this->successResponse(
+            $data ?? $paginator->items(),
+            $message,
+            200,
+            $this->paginationMeta($paginator)
+        );
     }
 }

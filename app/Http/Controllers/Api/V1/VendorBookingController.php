@@ -23,18 +23,12 @@ class VendorBookingController extends Controller
 
         $bookings = $this->bookingService->listVendorBookings($vendorId);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Vendor bookings retrieved successfully.',
-            'data' => BookingResource::collection($bookings),
-            'meta' => [
-                'pagination' => [
-                    'current_page' => $bookings->currentPage(),
-                    'per_page' => $bookings->perPage(),
-                    'total' => $bookings->total(),
-                ],
-            ],
-        ]);
+        return $this->successResponse(
+            BookingResource::collection($bookings),
+            'Vendor bookings retrieved successfully.',
+            200,
+            $this->paginationMeta($bookings)
+        );
     }
 
     public function confirm(string $id): JsonResponse

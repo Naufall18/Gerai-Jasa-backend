@@ -3,11 +3,12 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Vendor\UpdateProfileRequest;
+use App\Http\Requests\Vendor\UpdateSchedulesRequest;
 use App\Http\Resources\VendorResource;
 use App\Models\Schedule;
 use App\Models\Vendor;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
@@ -47,16 +48,11 @@ class VendorProfileController extends Controller
      * PATCH /api/v1/vendor/profile
      * Updates name, description, address, city.
      */
-    public function update(Request $request): JsonResponse
+    public function update(UpdateProfileRequest $request): JsonResponse
     {
         $vendor = $this->getVendor();
 
-        $validated = $request->validate([
-            'name'        => 'sometimes|string|max:150',
-            'description' => 'nullable|string|max:2000',
-            'address'     => 'nullable|string|max:500',
-            'city'        => 'nullable|string|max:100',
-        ]);
+        $validated = $request->validated();
 
         $vendor->update($validated);
 
@@ -73,17 +69,11 @@ class VendorProfileController extends Controller
      * Bulk-upsert operating schedules.
      * Body: { schedules: [{ day_of_week, open_time, close_time, is_closed }] }
      */
-    public function updateSchedules(Request $request): JsonResponse
+    public function updateSchedules(UpdateSchedulesRequest $request): JsonResponse
     {
         $vendor = $this->getVendor();
 
-        $validated = $request->validate([
-            'schedules'                  => 'required|array|min:1|max:7',
-            'schedules.*.day_of_week'    => 'required|integer|between:0,6',
-            'schedules.*.open_time'      => 'required|date_format:H:i:s',
-            'schedules.*.close_time'     => 'required|date_format:H:i:s',
-            'schedules.*.is_closed'      => 'required|boolean',
-        ]);
+        $validated = $request->validated();
 
         DB::transaction(function () use ($vendor, $validated) {
             foreach ($validated['schedules'] as $item) {

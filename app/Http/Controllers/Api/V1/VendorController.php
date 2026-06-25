@@ -28,18 +28,12 @@ class VendorController extends Controller
 
         $vendors = $this->vendorRepository->list(array_filter($filters), (int) $request->query('per_page', 20));
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Vendors retrieved successfully.',
-            'data' => VendorResource::collection($vendors),
-            'meta' => [
-                'pagination' => [
-                    'current_page' => $vendors->currentPage(),
-                    'per_page' => $vendors->perPage(),
-                    'total' => $vendors->total(),
-                ],
-            ],
-        ]);
+        return $this->successResponse(
+            VendorResource::collection($vendors),
+            'Vendors retrieved successfully.',
+            200,
+            $this->paginationMeta($vendors)
+        );
     }
 
     public function show(string $slug): JsonResponse
