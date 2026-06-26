@@ -118,6 +118,8 @@ class NotificationService
         $title = 'Booking Dikonfirmasi! ✅';
         $body  = "Booking Anda di {$vendor->name} untuk {$service?->name} pada {$timeSlot?->slot_date} {$timeSlot?->slot_time} telah dikonfirmasi.";
 
+        $this->record($customer, 'booking_confirmed', $title, $body, $booking);
+
         // FCM Push
         if (!empty($customer->fcm_token)) {
             $this->sendPush($customer->fcm_token, $title, $body, [
@@ -159,6 +161,8 @@ class NotificationService
 
         $title = 'Booking Dibatalkan';
         $body  = "Booking Anda di {$vendor->name} ({$booking->booking_code}) telah dibatalkan.";
+
+        $this->record($customer, 'booking_cancelled', $title, $body, $booking);
 
         if (!empty($customer->fcm_token)) {
             $this->sendPush($customer->fcm_token, $title, $body, [
@@ -204,6 +208,8 @@ class NotificationService
             $waPrefix = "⏰ *Pengingat 1 Jam Lagi*";
         }
 
+        $this->record($customer, 'booking_reminder', $title, $body, $booking);
+
         if (!empty($customer->fcm_token)) {
             $this->sendPush($customer->fcm_token, $title, $body, [
                 'type'       => 'booking_reminder',
@@ -222,6 +228,25 @@ class NotificationService
                 . "Pastikan Anda hadir tepat waktu ya!";
             $this->sendWhatsApp($customer->phone, $message);
         }
+    }
+
+    /**
+     * Persist an in-app notification for the user so it appears in the
+     * notifications screen, independent of push/WhatsApp delivery success.
+     */
+    private function record(\App\Models\User $user, string $type, string $title, string $body, ?Booking $booking = null): void
+    {
+        \App\Models\Notification::create([
+            'notifiable_type' => $user->getMorphClass(),
+            'notifiable_id' => $user->id,
+            'type' => $type,
+            'data' => [
+                'title' => $title,
+                'body' => $body,
+                'booking_id' => $booking?->id,
+                'booking_code' => $booking?->booking_code,
+            ],
+        ]);
     }
 
     /**
