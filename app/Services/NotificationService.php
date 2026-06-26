@@ -29,7 +29,7 @@ class NotificationService
             $response = Http::withHeaders([
                 'Authorization' => "key={$serverKey}",
                 'Content-Type'  => 'application/json',
-            ])->timeout(10)->post('https://fcm.googleapis.com/fcm/send', [
+            ])->connectTimeout(5)->timeout(8)->post('https://fcm.googleapis.com/fcm/send', [
                 'to' => $fcmToken,
                 'notification' => [
                     'title' => $title,
@@ -78,7 +78,7 @@ class NotificationService
         try {
             $response = Http::withHeaders([
                 'Authorization' => $token,
-            ])->timeout(10)->post(config('services.fonnte.url'), [
+            ])->connectTimeout(5)->timeout(8)->post(config('services.fonnte.url'), [
                 'target'  => $phone,
                 'message' => $message,
             ]);

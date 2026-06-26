@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Repositories\Eloquent\UserRepository;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 class AuthService
@@ -56,13 +57,14 @@ class AuthService
             'expires_at' => now()->addMinutes(10),
         ]);
 
-        // Deliver the code via WhatsApp (best-effort: no-ops when FONNTE_TOKEN is
-        // unset, and a delivery failure must not fail the request — the OTP row
-        // still exists and is readable from the DB during development).
-        $this->notificationService->sendWhatsApp(
+        // Deliver the code via WhatsApp AFTER the response is flushed, so a slow
+        // gateway never blocks the API call (the mobile client has a short
+        // timeout). Best-effort: no-ops without FONNTE_TOKEN, failures are
+        // swallowed, and the OTP row is always readable from the DB in dev.
+        defer(fn () => $this->notificationService->sendWhatsApp(
             $phone,
             "*{$code}* adalah kode OTP Gerai Jasa Anda.\n\nBerlaku 10 menit. Jangan bagikan kode ini kepada siapa pun.",
-        );
+        ));
 
         return [
             'success' => true,
@@ -201,7 +203,7 @@ class AuthService
             ];
         }
 
-        if (!\Hash::check($password, $user->password)) {
+        if (!Hash::check($password, $user->password)) {
             return [
                 'success' => false,
                 'message' => 'Invalid credentials',
@@ -271,13 +273,17 @@ class AuthService
     {
         $phone = preg_replace('/[^0-9+]/', '', $phone);
 
+        if (str_starts_with($phone, '+62')) {
+            return $phone;
+        }
+        if (str_starts_with($phone, '62')) {
+            return '+' . $phone;
+        }
         if (str_starts_with($phone, '0')) {
-            $phone = '+62' . substr($phone, 1);
-        } elseif (!str_starts_with($phone, '+62')) {
-            $phone = '+62' . $phone;
+            return '+62' . substr($phone, 1);
         }
 
-        return $phone;
+        return '+62' . $phone;
     }
 
     /**
