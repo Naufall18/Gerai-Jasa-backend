@@ -178,6 +178,30 @@ class AuthService
     }
 
     /**
+     * Update the authenticated user's editable profile fields.
+     *
+     * @param User $user
+     * @param array $data
+     * @return array
+     */
+    public function updateProfile(User $user, array $data): array
+    {
+        $user->update(array_filter([
+            'name' => $data['name'] ?? null,
+            'email' => $data['email'] ?? null,
+            'avatar_url' => $data['avatar_url'] ?? null,
+        ], fn ($v) => $v !== null));
+
+        return [
+            'success' => true,
+            'message' => 'Profile updated successfully',
+            'data' => [
+                'user' => $user->fresh(),
+            ],
+        ];
+    }
+
+    /**
      * Register new user (vendor/admin).
      *
      * @param array $data

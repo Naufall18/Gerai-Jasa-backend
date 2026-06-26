@@ -8,6 +8,7 @@ use App\Http\Requests\Auth\VerifyOtpRequest;
 use App\Http\Requests\Auth\RegisterRequest;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\CompleteProfileRequest;
+use App\Http\Requests\Auth\UpdateProfileRequest;
 use App\Services\AuthService;
 use App\Traits\ApiResponseTrait;
 use Illuminate\Http\JsonResponse;
@@ -89,6 +90,21 @@ class AuthController extends Controller
         if (!$result['success']) {
             return $this->errorResponse($result['message'], 401);
         }
+
+        return $this->successResponse($result['data'], $result['message']);
+    }
+
+    /**
+     * Update the authenticated user's profile.
+     *
+     * PATCH /api/v1/auth/profile
+     *
+     * @param UpdateProfileRequest $request
+     * @return JsonResponse
+     */
+    public function updateProfile(UpdateProfileRequest $request): JsonResponse
+    {
+        $result = $this->authService->updateProfile($request->user(), $request->validated());
 
         return $this->successResponse($result['data'], $result['message']);
     }
