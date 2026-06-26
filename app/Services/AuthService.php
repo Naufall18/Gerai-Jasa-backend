@@ -139,6 +139,9 @@ class AuthService
         // Generate token
         $token = $user->createToken('auth_token')->plainTextToken;
 
+        // The client routes brand-new phones to the biodata/profile-setup screen.
+        $isRegistered = !empty($user->email) && $user->name !== 'User';
+
         return [
             'success' => true,
             'message' => 'Login successful',
@@ -146,6 +149,30 @@ class AuthService
                 'user' => $user,
                 'token' => $token,
                 'token_type' => 'Bearer',
+                'is_registered' => $isRegistered,
+            ],
+        ];
+    }
+
+    /**
+     * Complete the authenticated user's profile (biodata) after OTP login.
+     *
+     * @param User $user
+     * @param array $data
+     * @return array
+     */
+    public function completeProfile(User $user, array $data): array
+    {
+        $user->update([
+            'name' => $data['name'],
+            'email' => $data['email'],
+        ]);
+
+        return [
+            'success' => true,
+            'message' => 'Profile completed successfully',
+            'data' => [
+                'user' => $user->fresh(),
             ],
         ];
     }
