@@ -60,4 +60,18 @@ class CreateBookingRequest extends FormRequest
             }
         });
     }
+
+    /**
+     * Validated payload plus the server-derived `total_price`.
+     *
+     * `total_price` is injected in withValidator() and has no validation rule,
+     * so it is intentionally absent from validated() — expose it explicitly here
+     * so the controller/service receive the price the client cannot tamper with.
+     */
+    public function bookingData(): array
+    {
+        return array_merge($this->validated(), [
+            'total_price' => (float) $this->input('total_price', 0),
+        ]);
+    }
 }
