@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\BookingController;
 use App\Http\Controllers\Api\V1\CategoryController;
 use App\Http\Controllers\Api\V1\HealthController;
+use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\ReviewController;
 use App\Http\Controllers\Api\V1\VendorBookingController;
 use App\Http\Controllers\Api\V1\VendorController;
@@ -59,6 +60,13 @@ Route::prefix('v1')->group(function () {
             Route::post('/{id}/pay', [BookingController::class, 'pay']);
             Route::patch('/{id}/cancel', [BookingController::class, 'cancel']);
             Route::post('/{id}/review', [ReviewController::class, 'store']);
+        });
+
+        // In-app notifications (any authenticated user)
+        Route::prefix('notifications')->group(function () {
+            Route::get('/', [NotificationController::class, 'index']);
+            Route::patch('/read-all', [NotificationController::class, 'markAllRead']);
+            Route::patch('/{id}/read', [NotificationController::class, 'markRead']);
         });
 
         // Vendor management routes (role: vendor)
