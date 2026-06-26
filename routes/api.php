@@ -38,6 +38,7 @@ Route::prefix('v1')->group(function () {
             Route::get('/me', [AuthController::class, 'me']);
             Route::patch('/complete-profile', [AuthController::class, 'completeProfile']);
             Route::patch('/profile', [AuthController::class, 'updateProfile']);
+            Route::post('/avatar', [AuthController::class, 'uploadAvatar']);
             Route::post('/logout', [AuthController::class, 'logout']);
             Route::post('/fcm-token', [AuthController::class, 'updateFcmToken']);
         });
