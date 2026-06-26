@@ -9,6 +9,11 @@ use App\Http\Requests\Auth\RegisterRequest;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\CompleteProfileRequest;
 use App\Http\Requests\Auth\UpdateProfileRequest;
+use App\Http\Requests\Auth\UploadAvatarRequest;
+use App\Http\Resources\UserResource;
+use Illuminate\Support\Facades\Storage;
+use Intervention\Image\ImageManager;
+use Intervention\Image\Drivers\Gd\Driver as GdDriver;
 use App\Services\AuthService;
 use App\Traits\ApiResponseTrait;
 use Illuminate\Http\JsonResponse;
@@ -107,6 +112,44 @@ class AuthController extends Controller
         $result = $this->authService->updateProfile($request->user(), $request->validated());
 
         return $this->successResponse($result['data'], $result['message']);
+    }
+
+    /**
+     * Upload / replace the authenticated user's avatar.
+     *
+     * POST /api/v1/auth/avatar  (multipart: avatar=<file>)
+     *
+     * @param UploadAvatarRequest $request
+     * @return JsonResponse
+     */
+    public function uploadAvatar(UploadAvatarRequest $request): JsonResponse
+    {
+        $user = $request->user();
+
+        // Resize/cover to a 400x400 square and encode as JPEG to keep avatars small.
+        $manager = new ImageManager(new GdDriver());
+        $image = $manager->decodePath($request->file('avatar')->getRealPath());
+        $image->cover(400, 400);
+        $encoded = $image->encodeUsingFileExtension('jpg', quality: 80);
+
+        $path = 'avatars/' . $user->id . '_' . now()->timestamp . '.jpg';
+        Storage::disk('public')->put($path, (string) $encoded);
+
+        // Remove the previous avatar file if it lived on our public disk.
+        if ($user->avatar_url && str_contains($user->avatar_url, '/storage/avatars/')) {
+            $old = 'avatars/' . basename(parse_url($user->avatar_url, PHP_URL_PATH));
+            Storage::disk('public')->delete($old);
+        }
+
+        // Build an absolute URL using the host the client actually reached, so the
+        // image loads on physical devices (LAN IP), not just localhost.
+        $url = $request->getSchemeAndHttpHost() . '/storage/' . $path;
+        $user->update(['avatar_url' => $url]);
+
+        return $this->successResponse(
+            ['user' => new UserResource($user->fresh())],
+            'Avatar updated successfully.',
+        );
     }
 
     /**
