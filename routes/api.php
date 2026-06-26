@@ -35,6 +35,7 @@ Route::prefix('v1')->group(function () {
         // Protected Auth routes
         Route::middleware('auth:sanctum')->group(function () {
             Route::get('/me', [AuthController::class, 'me']);
+            Route::patch('/complete-profile', [AuthController::class, 'completeProfile']);
             Route::post('/logout', [AuthController::class, 'logout']);
             Route::post('/fcm-token', [AuthController::class, 'updateFcmToken']);
         });

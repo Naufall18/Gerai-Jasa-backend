@@ -7,6 +7,7 @@ use App\Http\Requests\Auth\RequestOtpRequest;
 use App\Http\Requests\Auth\VerifyOtpRequest;
 use App\Http\Requests\Auth\RegisterRequest;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Http\Requests\Auth\CompleteProfileRequest;
 use App\Services\AuthService;
 use App\Traits\ApiResponseTrait;
 use Illuminate\Http\JsonResponse;
@@ -105,6 +106,21 @@ class AuthController extends Controller
         $result = $this->authService->me($request->user());
 
         return $this->successResponse($result['data']);
+    }
+
+    /**
+     * Complete profile (biodata) for a freshly OTP-verified user.
+     *
+     * PATCH /api/v1/auth/complete-profile
+     *
+     * @param CompleteProfileRequest $request
+     * @return JsonResponse
+     */
+    public function completeProfile(CompleteProfileRequest $request): JsonResponse
+    {
+        $result = $this->authService->completeProfile($request->user(), $request->validated());
+
+        return $this->successResponse($result['data'], $result['message']);
     }
 
     /**
