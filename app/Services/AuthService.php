@@ -11,8 +11,10 @@ use Illuminate\Support\Str;
 
 class AuthService
 {
-    public function __construct(private UserRepository $userRepository)
-    {
+    public function __construct(
+        private UserRepository $userRepository,
+        private NotificationService $notificationService,
+    ) {
     }
 
     /**
@@ -53,6 +55,14 @@ class AuthService
             'type' => 'login',
             'expires_at' => now()->addMinutes(10),
         ]);
+
+        // Deliver the code via WhatsApp (best-effort: no-ops when FONNTE_TOKEN is
+        // unset, and a delivery failure must not fail the request — the OTP row
+        // still exists and is readable from the DB during development).
+        $this->notificationService->sendWhatsApp(
+            $phone,
+            "*{$code}* adalah kode OTP Gerai Jasa Anda.\n\nBerlaku 10 menit. Jangan bagikan kode ini kepada siapa pun.",
+        );
 
         return [
             'success' => true,
