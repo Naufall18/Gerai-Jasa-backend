@@ -137,16 +137,27 @@ class BookingService
     }
 
     /**
-     * List bookings for a vendor.
+     * List bookings for a vendor with optional filters.
      *
      * @param string $vendorId
+     * @param string|null $status
+     * @param string|null $from
+     * @param string|null $to
      * @param int $perPage
      * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator
      */
-    public function listVendorBookings(string $vendorId, int $perPage = 20)
-    {
+    public function listVendorBookings(
+        string $vendorId,
+        ?string $status = null,
+        ?string $from = null,
+        ?string $to = null,
+        int $perPage = 20
+    ) {
         return Booking::with(['customer', 'service', 'timeSlot', 'payment'])
             ->where('vendor_id', $vendorId)
+            ->when($status, fn ($q) => $q->where('status', $status))
+            ->when($from, fn ($q) => $q->whereHas('timeSlot', fn ($q) => $q->where('slot_date', '>=', $from)))
+            ->when($to, fn ($q) => $q->whereHas('timeSlot', fn ($q) => $q->where('slot_date', '<=', $to)))
             ->orderByDesc('created_at')
             ->paginate($perPage);
     }

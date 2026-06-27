@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\BookingResource;
 use App\Services\BookingService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class VendorBookingController extends Controller
@@ -15,13 +16,19 @@ class VendorBookingController extends Controller
     ) {
     }
 
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
         /** @var \App\Models\User $user */
         $user = Auth::user();
         $vendorId = $user ? (string) $user->vendor?->id : '';
 
-        $bookings = $this->bookingService->listVendorBookings($vendorId);
+        $bookings = $this->bookingService->listVendorBookings(
+            $vendorId,
+            status: $request->query('status'),
+            from: $request->query('from'),
+            to: $request->query('to'),
+            perPage: (int) $request->query('per_page', 20),
+        );
 
         return $this->successResponse(
             BookingResource::collection($bookings),

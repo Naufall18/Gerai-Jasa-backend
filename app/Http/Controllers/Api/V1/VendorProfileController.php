@@ -8,6 +8,7 @@ use App\Http\Requests\Vendor\UpdateSchedulesRequest;
 use App\Http\Resources\VendorResource;
 use App\Models\Schedule;
 use App\Models\Vendor;
+use App\Services\SlotGenerationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -69,8 +70,10 @@ class VendorProfileController extends Controller
      * Bulk-upsert operating schedules.
      * Body: { schedules: [{ day_of_week, open_time, close_time, is_closed }] }
      */
-    public function updateSchedules(UpdateSchedulesRequest $request): JsonResponse
-    {
+    public function updateSchedules(
+        UpdateSchedulesRequest $request,
+        SlotGenerationService $slotService
+    ): JsonResponse {
         $vendor = $this->getVendor();
 
         $validated = $request->validated();
@@ -87,6 +90,9 @@ class VendorProfileController extends Controller
                 );
             }
         });
+
+        // Regenerate time slots so the calendar reflects the updated schedule
+        $slotService->generateForVendor($vendor, days: 60);
 
         return response()->json([
             'success' => true,
